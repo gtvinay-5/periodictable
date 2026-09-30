@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Elementa 3D — The Periodic Table, Reimagined for Class 11 & 12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{
+    --bg:#05060f;
+    --panel:rgba(14,17,38,.78);
+    --border:rgba(255,255,255,.09);
+    --text:#e8ebff;
+    --muted:#8d93b8;
+    --accent:#7c5cff;
+    --accent2:#22d3ee;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;overflow-x:hidden}
+  h1,h2,h3,.font-display{font-family:'Space Grotesk',sans-serif}
+  .grad-text{background:linear-gradient(90deg,#a78bfa,#22d3ee,#f472b6);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200% auto;animation:shine 6s linear infinite}
+  @keyframes shine{to{background-position:200% center}}
+  .glass{background:var(--panel);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border)}
+  .btn{padding:.55rem 1rem;border-radius:999px;font-weight:600;font-size:.85rem;transition:all .25s;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);cursor:pointer;white-space:nowrap}
+  .btn:hover{background:rgba(255,255,255,.1);transform:translateY(-1px)}
+  .btn.active{background:linear-gradient(135deg,var(--accent),#4f46e5);border-color:transparent;box-shadow:0 6px 24px rgba(124,92,255,.45)}
+  .btn-primary{background:linear-gradient(135deg,#7c5cff,#22d3ee);border:none;box-shadow:0 10px 30px rgba(124,92,255,.4)}
+  .btn-primary:hover{box-shadow:0 14px 40px rgba(34,211,238,.45)}
+
+  /* Hero bg */
+  .hero-bg{position:absolute;inset:0;background:
+    radial-gradient(800px 500px at 15% 20%,rgba(124,92,255,.28),transparent 60%),
+    radial-gradient(700px 500px at 85% 30%,rgba(34,211,238,.18),transparent 60%),
+    radial-gradient(600px 400px at 50% 100%,rgba(244,114,182,.15),transparent 60%)}
+  .grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%)}
+  .float-stage{perspective:900px}
+  .float-tile{position:absolute;width:88px;height:108px;border-radius:16px;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:'Space Grotesk';border:1px solid rgba(var(--rgb),.6);background:linear-gradient(160deg,rgba(var(--rgb),.4),rgba(var(--rgb),.06));box-shadow:0 0 30px rgba(var(--rgb),.35);animation:floaty 7s ease-in-out infinite;transform-style:preserve-3d}
+  .float-tile b{font-size:2rem;line-height:1}
+  .float-tile small{font-size:.65rem;opacity:.8;margin-top:4px}
+  .float-tile i{position:absolute;top:6px;left:9px;font-style:normal;font-size:.7rem;opacity:.8}
+  @keyframes floaty{0%,100%{transform:translateY(0) rotateX(12deg) rotateY(-18deg)}50%{transform:translateY(-22px) rotateX(-8deg) rotateY(16deg)}}
+
+  /* Lab */
+  #lab{position:relative;height:92vh;min-height:560px;border-radius:28px;overflow:hidden;border:1px solid var(--border);background:radial-gradient(ellipse at center,#0d1030 0%,#04050c 75%)}
+  #webgl,#css3d{position:absolute;inset:0}
+  #css3d{z-index:2}
+  .element{width:120px;height:160px}
+  .tile{width:120px;height:160px;border-radius:14px;position:relative;cursor:pointer;user-select:none;
+    border:1px solid rgba(var(--rgb),.65);
+    background:linear-gradient(160deg,rgba(var(--rgb),.38),rgba(var(--rgb),.07) 70%);
+    box-shadow:0 0 18px rgba(var(--rgb),.3), inset 0 0 20px rgba(var(--rgb),.12);
+    transition:transform .25s, box-shadow .25s, opacity .35s, background .5s, border-color .5s;color:#fff}
+  .tile:hover{transform:scale(1.12);box-shadow:0 0 40px rgba(var(--rgb),.85), inset 0 0 30px rgba(var(--rgb),.3)}
+  .tile .num{position:absolute;top:9px;right:11px;font-size:13px;color:rgba(255,255,255,.8);font-weight:600}
+  .tile .sym{position:absolute;top:34px;left:0;right:0;text-align:center;font-family:'Space Grotesk';font-size:58px;font-weight:700;color:#fff;text-shadow:0 0 14px rgba(var(--rgb),.95)}
+  .tile .nm{position:absolute;bottom:26px;left:0;right:0;text-align:center;font-size:12px;color:rgba(255,255,255,.9);font-weight:500}
+  .tile .ms{position:absolute;bottom:9px;left:0;right:0;text-align:center;font-size:10px;color:rgba(255,255,255,.6)}
+  .element.dim .tile{opacity:.1}
+  .element.active .tile{box-shadow:0 0 60px rgba(var(--rgb),1),0 0 0 3px #fff;transform:scale(1.15)}
+  .element.right .tile{box-shadow:0 0 60px #22c55e,0 0 0 4px #22c55e;background:rgba(34,197,94,.45)}
+  .element.wrong .tile{box-shadow:0 0 60px #ef4444,0 0 0 4px #ef4444;background:rgba(239,68,68,.45)}
+
+  .toolbar{position:absolute;top:14px;left:14px;right:14px;z-index:10;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;pointer-events:none}
+  .toolbar>*{pointer-events:auto}
+  .seg{display:flex;gap:4px;padding:5px;border-radius:999px}
+  .seg .btn{border:none;padding:.45rem .85rem}
+  select,input[type=text]{background:rgba(255,255,255,.06);border:1px solid var(--border);color:var(--text);border-radius:999px;padding:.5rem .95rem;font-size:.85rem;outline:none}
+  select option{background:#0d1030}
+  input[type=text]:focus,select:focus{border-color:var(--accent)}
+  .legend{position:absolute;left:14px;right:14px;bottom:14px;z-index:10;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;pointer-events:none}
+  .chip{pointer-events:auto;display:flex;align-items:center;gap:6px;padding:.35rem .7rem;border-radius:999px;font-size:.72rem;cursor:pointer;transition:.2s;border:1px solid var(--border);background:rgba(10,12,30,.7);backdrop-filter:blur(10px)}
+  .chip:hover,.chip.on{background:rgba(255,255,255,.12)}
+  .chip span{width:10px;height:10px;border-radius:50%}
+  .hint{position:absolute;right:16px;bottom:62px;z-index:9;font-size:.72rem;color:var(--muted);text-align:right;pointer-events:none}
+
+  #quizHud{position:absolute;top:80px;left:50%;transform:translateX(-50%) translateY(-20px);z-index:11;opacity:0;pointer-events:none;transition:.4s;text-align:center;min-width:280px;max-width:92%}
+  #quizHud.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+
+  /* Panel */
+  #panel{position:fixed;top:0;right:0;height:100%;width:400px;max-width:100%;z-index:60;transform:translateX(105%);transition:transform .5s cubic-bezier(.2,.8,.2,1);overflow-y:auto;border-left:1px solid var(--border);background:rgba(9,11,28,.92);backdrop-filter:blur(20px)}
+  #panel.open{transform:translateX(0)}
+  .stat{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:14px;padding:.7rem .85rem}
+  .stat p{margin:0}
+  .stat .k{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+  .stat .v{font-family:'Space Grotesk';font-weight:600;font-size:1.05rem;margin-top:2px}
+  .bigsym{width:120px;height:140px;border-radius:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid rgba(var(--rgb),.7);background:linear-gradient(160deg,rgba(var(--rgb),.5),rgba(var(--rgb),.08));box-shadow:0 0 50px rgba(var(--rgb),.5);position:relative}
+  .bigsym b{font-family:'Space Grotesk';font-size:3.6rem;line-height:1}
+  .bigsym i{position:absolute;top:8px;left:12px;font-style:normal;font-size:.85rem;opacity:.85}
+  .shellbar{display:flex;gap:6px;flex-wrap:wrap}
+  .shellbar div{padding:.3rem .6rem;border-radius:10px;background:rgba(124,92,255,.15);border:1px solid rgba(124,92,255,.35);font-size:.8rem;font-family:'Space Grotesk'}
+
+  .toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%) translateY(40px);opacity:0;z-index:80;transition:.35s;padding:.8rem 1.2rem;border-radius:14px;font-weight:600}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .card{border-radius:22px;padding:1.5rem;transition:.35s;position:relative;overflow:hidden}
+  .card:hover{transform:translateY(-6px);box-shadow:0 20px 50px rgba(0,0,0,.4)}
+  .card::before{content:"";position:absolute;inset:-1px;border-radius:22px;padding:1px;background:linear-gradient(135deg,rgba(124,92,255,.6),transparent 40%,rgba(34,211,238,.5));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+  .reveal{opacity:0;transform:translateY(30px);transition:1s cubic-bezier(.2,.8,.2,1)}
+  .reveal.in{opacity:1;transform:none}
+  .trend-arrow{height:6px;border-radius:6px}
+
+  #loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:20;color:var(--muted);font-size:.9rem;transition:opacity .6s}
+  .spin{width:38px;height:38px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--accent2);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  ::-webkit-scrollbar{width:8px}::-webkit-scrollbar-thumb{background:#2a2f55;border-radius:8px}
+
+  @media (max-width:768px){
+    #panel{top:auto;bottom:0;height:78%;width:100%;transform:translateY(105%);border-left:none;border-top:1px solid var(--border);border-radius:24px 24px 0 0}
+    #panel.open{transform:translateY(0)}
+    #lab{height:86vh;border-radius:20px}
+    .hint{display:none}
+    .toolbar{gap:6px}
+    .seg .btn{padding:.4rem .6rem;font-size:.75rem}
+    #quizHud{top:130px}
+  }
+</style>
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+}}
+</script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="fixed top-0 inset-x-0 z-50">
+  <div class="max-w-7xl mx-auto mt-3 px-3">
+    <div class="glass rounded-full flex items-center justify-between px-4 py-2.5">
+      <a href="#top" class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg flex items-center justify-center font-display font-bold text-sm" style="background:linear-gradient(135deg,#7c5cff,#22d3ee)">E₃</div>
+        <span class="font-display font-bold text-lg">Elementa<span class="text-cyan-300">3D</span></span>
+      </a>
+      <div class="hidden md:flex gap-6 text-sm text-slate-300">
+        <a href="#lab-section" class="hover:text-white">3D Lab</a>
+        <a href="#trends" class="hover:text-white">Trends</a>
+        <a href="#blocks" class="hover:text-white">Blocks</a>
+        <a href="#tips" class="hover:text-white">Exam Tips</a>
+      </div>
+      <a href="#lab-section" class="btn btn-primary">Launch Lab</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header id="top" class="relative min-h-screen flex items-center overflow-hidden">
+  <div class="hero-bg"></div><div class="grid-lines"></div>
+  <div class="relative max-w-7xl mx-auto px-5 grid lg:grid-cols-2 gap-10 items-center pt-28 pb-16 w-full">
+    <div class="reveal">
+      <div class="inline-flex items-center gap-2 glass rounded-full px-3 py-1 text-xs text-slate-300 mb-5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> Built for Class 11 & 12 Chemistry · CBSE / JEE / NEET
+      </div>
+      <h1 class="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.05]">
+        Don't memorise the<br><span class="grad-text">Periodic Table.</span><br>Fly through it.
+      </h1>
+      <p class="mt-6 text-slate-300 text-lg max-w-xl">All 118 elements floating in 3D space. Drag to orbit, morph the table into a sphere or helix, colour it by blocks & trends, peek inside atoms with live Bohr models — and test yourself with a 3D quiz.</p>
+      <div class="mt-8 flex flex-wrap gap-3">
+        <a href="#lab-section" class="btn btn-primary !px-6 !py-3 !text-base">Enter the 3D Lab →</a>
+        <a href="#trends" class="btn !px-6 !py-3 !text-base">Explore Trends</a>
+      </div>
+      <div class="mt-10 grid grid-cols-3 gap-4 max-w-md">
+        <div><p class="font-display text-3xl font-bold">118</p><p class="text-xs text-slate-400">Elements in 3D</p></div>
+        <div><p class="font-display text-3xl font-bold">4</p><p class="text-xs text-slate-400">Spatial layouts</p></div>
+        <div><p class="font-display text-3xl font-bold">∞</p><p class="text-xs text-slate-400">Quiz rounds</p></div>
+      </div>
+    </div>
+    <div class="relative h-[420px] float-stage hidden sm:block reveal">
+      <div class="float-tile" style="--rgb:148,163,255;left:8%;top:10%;animation-delay:0s"><i>1</i><b>H</b><small>Hydrogen</small></div>
+      <div class="float-tile" style="--rgb:255,93,115;left:40%;top:0%;animation-delay:-1.5s"><i>11</i><b>Na</b><small>Sodium</small></div>
+      <div class="float-tile" style="--rgb:96,165,250;left:72%;top:14%;animation-delay:-3s"><i>26</i><b>Fe</b><small>Iron</small></div>
+      <div class="float-tile" style="--rgb:52,211,153;left:22%;top:48%;animation-delay:-2.2s"><i>6</i><b>C</b><small>Carbon</small></div>
+      <div class="float-tile" style="--rgb:250,204,21;left:55%;top:44%;animation-delay:-4s"><i>79</i><b>Au</b><small>Gold</small></div>
+      <div class="float-tile" style="--rgb:192,132,252;left:80%;top:62%;animation-delay:-5s"><i>10</i><b>Ne</b><small>Neon</small></div>
+      <div class="float-tile" style="--rgb:34,211,238;left:4%;top:74%;animation-delay:-3.6s"><i>17</i><b>Cl</b><small>Chlorine</small></div>
+      <div class="float-tile" style="--rgb:251,146,60;left:42%;top:78%;animation-delay:-.8s"><i>92</i><b>U</b><small>Uranium</small></div>
+    </div>
+  </div>
+</header>
+
+<!-- LAB -->
+<section id="lab-section" class="max-w-[1600px] mx-auto px-3 sm:px-5 py-10">
+  <div class="flex flex-wrap items-end justify-between gap-4 mb-5 px-1 reveal">
+    <div>
+      <p class="text-cyan-300 text-sm font-semibold tracking-widest uppercase">Interactive 3D Lab</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mt-1">The Element Universe</h2>
+      <p class="text-slate-400 mt-1 text-sm">Drag to rotate · Right-drag / two-finger to pan · Click lab to enable zoom · Tap any element for details</p>
+    </div>
+  </div>
+
+  <div id="lab">
+    <div id="loader"><div><div class="spin"></div>Assembling 118 elements…</div></div>
+    <div id="webgl"></div>
+    <div id="css3d"></div>
+
+    <div class="toolbar">
+      <div class="seg glass" id="layoutSeg">
+        <button class="btn active" data-layout="table">▦ Table</button>
+        <button class="btn" data-layout="sphere">◯ Sphere</button>
+        <button class="btn" data-layout="helix">⟳ Helix</button>
+        <button class="btn" data-layout="grid">▤ Grid</button>
+      </div>
+      <div class="flex flex-wrap gap-2 items-center">
+        <select id="colorMode" title="Colour by">
+          <option value="category">Colour: Category</option>
+          <option value="block">Colour: s/p/d/f Block</option>
+          <option value="period">Colour: Period</option>
+          <option value="mass">Colour: Atomic Mass</option>
+        </select>
+        <input id="search" type="text" placeholder="🔍 Search name, symbol, Z" class="w-44 sm:w-56">
+        <button class="btn" id="rotBtn" title="Auto-rotate">↻ Spin</button>
+        <button class="btn" id="resetBtn" title="Reset view">⌂</button>
+        <button class="btn btn-primary" id="quizBtn">🎯 Quiz</button>
+      </div>
+    </div>
+
+    <div id="quizHud" class="glass rounded-2xl px-5 py-3">
+      <div class="flex items-center justify-between gap-4 text-xs text-slate-400">
+        <span id="qRound">Round 1/10</span><span id="qScore">Score 0</span>
+        <button id="qStop" class="text-rose-300 hover:text-rose-200">✕ Exit</button>
+      </div>
+      <p class="text-xs uppercase tracking-widest text-cyan-300 mt-2" id="qType">Find the element</p>
+      <p class="font-display text-xl sm:text-2xl font-bold mt-1" id="qPrompt">—</p>
+    </div>
+
+    <div class="hint" id="hint">🖱️ Drag to orbit · click inside to enable scroll-zoom</div>
+    <div class="legend" id="legend"></div>
+  </div>
+</section>
+
+<!-- DETAIL PANEL -->
+<aside id="panel">
+  <div class="p-5 sm:p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex gap-2">
+        <button class="btn !px-3" id="prevEl">← Prev</button>
+        <button class="btn !px-3" id="nextEl">Next →</button>
+      </div>
+      <button class="btn !px-3" id="closePanel">✕</button>
+    </div>
+    <div class="flex gap-4 items-center">
+      <div class="bigsym" id="pSymBox"><i id="pNum">1</i><b id="pSym">H</b></div>
+      <div>
+        <h3 class="text-3xl font-bold" id="pName">Hydrogen</h3>
+        <p class="text-sm mt-1" id="pCat">Nonmetal</p>
+        <button class="btn mt-3 !text-xs" id="focusBtn">🎥 Fly to element</button>
+      </div>
+    </div>
+    <div class="mt-5">
+      <canvas id="bohr" width="340" height="300" class="w-full rounded-2xl" style="background:radial-gradient(circle at center,rgba(124,92,255,.15),transparent 70%)"></canvas>
+      <p class="text-center text-xs text-slate-500 -mt-1">Live Bohr model · electrons per shell</p>
+    </div>
+    <div class="grid grid-cols-2 gap-2.5 mt-4">
+      <div class="stat"><p class="k">Atomic Number (Z)</p><p class="v" id="sZ">1</p></div>
+      <div class="stat"><p class="k">Atomic Mass (u)</p><p class="v" id="sMass">1.008</p></div>
+      <div class="stat"><p class="k">Group</p><p class="v" id="sGroup">1</p></div>
+      <div class="stat"><p class="k">Period</p><p class="v" id="sPeriod">1</p></div>
+      <div class="stat"><p class="k">Block</p><p class="v" id="sBlock">s</p></div>
+      <div class="stat"><p class="k">Neutrons (≈)</p><p class="v" id="sN">0</p></div>
+    </div>
+    <div class="stat mt-2.5"><p class="k">Electronic Configuration</p><p class="v !text-lg" id="sConfig">1s¹</p></div>
+    <div class="mt-3">
+      <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Electrons per shell (K, L, M…)</p>
+      <div class="shellbar" id="sShells"></div>
+    </div>
+    <div class="mt-4 rounded-2xl p-4" style="background:linear-gradient(135deg,rgba(124,92,255,.18),rgba(34,211,238,.1));border:1px solid rgba(124,92,255,.35)">
+      <p class="text-xs uppercase tracking-widest text-violet-300 font-semibold">📘 Board / Entrance Tip</p>
+      <p class="text-sm mt-1.5 text-slate-200 leading-relaxed" id="sTip">—</p>
+    </div>
+    <p class="text-[11px] text-slate-500 mt-4">Tip: use ← → arrow keys to step through elements, Esc to close.</p>
+  </div>
+</aside>
+
+<!-- TRENDS -->
+<section id="trends" class="max-w-7xl mx-auto px-5 py-20">
+  <div class="text-center max-w-2xl mx-auto reveal">
+    <p class="text-cyan-300 text-sm font-semibold tracking-widest uppercase">Periodic Trends</p>
+    <h2 class="text-3xl sm:text-5xl font-bold mt-2">See the patterns, not just the boxes</h2>
+    <p class="text-slate-400 mt-4">The four trends that appear in almost every Class 11 exam — visualised in one glance.</p>
+  </div>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-12">
+    <div class="card glass reveal">
+      <div class="text-3xl">⚛️</div>
+      <h3 class="font-bold text-xl mt-3">Atomic Radius</h3>
+      <p class="text-slate-400 text-sm mt-2">Decreases across a period (↑ effective nuclear charge) and increases down a group (new shells added).</p>
+      <div class="mt-5 space-y-2 text-xs text-slate-400">
+        <div>Across → <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#22d3ee,#1e293b)"></div></div>
+        <div>Down ↓ <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#1e293b,#22d3ee)"></div></div>
+      </div>
+    </div>
+    <div class="card glass reveal">
+      <div class="text-3xl">⚡</div>
+      <h3 class="font-bold text-xl mt-3">Ionisation Enthalpy</h3>
+      <p class="text-slate-400 text-sm mt-2">Increases across a period, decreases down a group. Exceptions: Be &gt; B and N &gt; O (stable configurations).</p>
+      <div class="mt-5 space-y-2 text-xs text-slate-400">
+        <div>Across → <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#1e293b,#a78bfa)"></div></div>
+        <div>Down ↓ <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#a78bfa,#1e293b)"></div></div>
+      </div>
+    </div>
+    <div class="card glass reveal">
+      <div class="text-3xl">🧲</div>
+      <h3 class="font-bold text-xl mt-3">Electronegativity</h3>
+      <p class="text-slate-400 text-sm mt-2">Fluorine is the champion (4.0 on Pauling scale). Increases across, decreases down. Noble gases usually excluded.</p>
+      <div class="mt-5 space-y-2 text-xs text-slate-400">
+        <div>Across → <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#1e293b,#f472b6)"></div></div>
+        <div>Down ↓ <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#f472b6,#1e293b)"></div></div>
+      </div>
+    </div>
+    <div class="card glass reveal">
+      <div class="text-3xl">🎯</div>
+      <h3 class="font-bold text-xl mt-3">Electron Gain Enthalpy</h3>
+      <p class="text-slate-400 text-sm mt-2">Becomes more negative across a period. Chlorine has the most negative value — not fluorine (small size, e⁻ repulsion).</p>
+      <div class="mt-5 space-y-2 text-xs text-slate-400">
+        <div>Across → <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#1e293b,#facc15)"></div></div>
+        <div>Down ↓ <div class="trend-arrow mt-1" style="background:linear-gradient(90deg,#facc15,#1e293b)"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BLOCKS -->
+<section id="blocks" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="grid lg:grid-cols-2 gap-10 items-center">
+    <div class="reveal">
+      <p class="text-cyan-300 text-sm font-semibold tracking-widest uppercase">s · p · d · f</p>
+      <h2 class="text-3xl sm:text-5xl font-bold mt-2">Four blocks. One logic.</h2>
+      <p class="text-slate-400 mt-4">The block is decided by the subshell receiving the last (differentiating) electron. Switch the 3D lab to <b class="text-white">Colour: Block</b> to see the table split into its four regions.</p>
+      <button class="btn btn-primary mt-6" id="goBlock">Show blocks in 3D →</button>
+    </div>
+    <div class="grid grid-cols-2 gap-4">
+      <div class="card glass reveal"><div class="font-display text-5xl font-bold" style="color:#ff6b8b">s</div><p class="text-sm text-slate-300 mt-2">Groups 1–2 (+He). ns¹⁻² · reactive metals, strong reducing agents.</p></div>
+      <div class="card glass reveal"><div class="font-display text-5xl font-bold" style="color:#facc15">p</div><p class="text-sm text-slate-300 mt-2">Groups 13–18. ns² np¹⁻⁶ · metals, metalloids & nonmetals together.</p></div>
+      <div class="card glass reveal"><div class="font-display text-5xl font-bold" style="color:#60a5fa">d</div><p class="text-sm text-slate-300 mt-2">Groups 3–12. (n−1)d¹⁻¹⁰ ns⁰⁻² · coloured ions, catalysts, variable O.S.</p></div>
+      <div class="card glass reveal"><div class="font-display text-5xl font-bold" style="color:#34d399">f</div><p class="text-sm text-slate-300 mt-2">Lanthanoids & actinoids. (n−2)f¹⁻¹⁴ · inner transition elements.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- TIPS -->
+<section id="tips" class="max-w-7xl mx-auto px-5 py-16">
+  <div class="glass rounded-[28px] p-6 sm:p-10 relative overflow-hidden reveal">
+    <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full" style="background:radial-gradient(circle,rgba(124,92,255,.35),transparent 70%)"></div>
+    <h2 class="text-3xl sm:text-4xl font-bold relative">Quick-Revision Capsules</h2>
+    <div class="grid md:grid-cols-3 gap-5 mt-8 relative">
+      <div><p class="text-violet-300 font-semibold">Anomalous configurations</p><p class="text-slate-300 text-sm mt-1">Cr: [Ar]3d⁵4s¹ and Cu: [Ar]3d¹⁰4s¹ — half-filled & fully-filled d-subshells give extra stability (exchange energy).</p></div>
+      <div><p class="text-cyan-300 font-semibold">Diagonal relationship</p><p class="text-slate-300 text-sm mt-1">Li ↔ Mg, Be ↔ Al, B ↔ Si show similar properties due to comparable charge/radius ratio.</p></div>
+      <div><p class="text-pink-300 font-semibold">Lanthanoid contraction</p><p class="text-slate-300 text-sm mt-1">Poor shielding by 4f electrons shrinks radii — so Zr (160 pm) and Hf (159 pm) are almost twins.</p></div>
+      <div><p class="text-amber-300 font-semibold">Inert pair effect</p><p class="text-slate-300 text-sm mt-1">Heavier p-block elements prefer lower oxidation states: Tl⁺, Pb²⁺, Bi³⁺ are more stable.</p></div>
+      <div><p class="text-emerald-300 font-semibold">Modern periodic law</p><p class="text-slate-300 text-sm mt-1">Properties are periodic functions of atomic number (Moseley), not atomic mass (Mendeleev).</p></div>
+      <div><p class="text-sky-300 font-semibold">IUPAC naming (Z &gt; 100)</p><p class="text-slate-300 text-sm mt-1">0 nil, 1 un, 2 bi, 3 tri, 4 quad, 5 pent, 6 hex, 7 sept, 8 oct, 9 enn → Z=119 is Ununennium (Uue).</p></div>
+    </div>
+  </div>
+</section>
+
+<footer class="text-center text-slate-500 text-sm py-10 border-t border-white/5">
+  <p class="font-display text-slate-300 font-semibold">Elementa<span class="text-cyan-300">3D</span></p>
+  <p class="mt-1">Made for curious minds of Class 11 & 12 · Chemistry is better in three dimensions.</p>
+</footer>
+
+<div class="toast glass" id="toast"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ---------------- DATA ---------------- */
+const RAW = "H,Hydrogen,1.008|He,Helium,4.0026|Li,Lithium,6.94|Be,Beryllium,9.0122|B,Boron,10.81|C,Carbon,12.011|N,Nitrogen,14.007|O,Oxygen,15.999|F,Fluorine,18.998|Ne,Neon,20.180|Na,Sodium,22.990|Mg,Magnesium,24.305|Al,Aluminium,26.982|Si,Silicon,28.085|P,Phosphorus,30.974|S,Sulfur,32.06|Cl,Chlorine,35.45|Ar,Argon,39.948|K,Potassium,39.098|Ca,Calcium,40.078|Sc,Scandium,44.956|Ti,Titanium,47.867|V,Vanadium,50.942|Cr,Chromium,51.996|Mn,Manganese,54.938|Fe,Iron,55.845|Co,Cobalt,58.933|Ni,Nickel,58.693|Cu,Copper,63.546|Zn,Zinc,65.38|Ga,Gallium,69.723|Ge,Germanium,72.630|As,Arsenic,74.922|Se,Selenium,78.971|Br,Bromine,79.904|Kr,Krypton,83.798|Rb,Rubidium,85.468|Sr,Strontium,87.62|Y,Yttrium,88.906|Zr,Zirconium,91.224|Nb,Niobium,92.906|Mo,Molybdenum,95.95|Tc,Technetium,98|Ru,Ruthenium,101.07|Rh,Rhodium,102.91|Pd,Palladium,106.42|Ag,Silver,107.87|Cd,Cadmium,112.41|In,Indium,114.82|Sn,Tin,118.71|Sb,Antimony,121.76|Te,Tellurium,127.60|I,Iodine,126.90|Xe,Xenon,131.29|Cs,Caesium,132.91|Ba,Barium,137.33|La,Lanthanum,138.91|Ce,Cerium,140.12|Pr,Praseodymium,140.91|Nd,Neodymium,144.24|Pm,Promethium,145|Sm,Samarium,150.36|Eu,Europium,151.96|Gd,Gadolinium,157.25|Tb,Terbium,158.93|Dy,Dysprosium,162.50|Ho,Holmium,164.93|Er,Erbium,167.26|Tm,Thulium,168.93|Yb,Ytterbium,173.05|Lu,Lutetium,174.97|Hf,Hafnium,178.49|Ta,Tantalum,180.95|W,Tungsten,183.84|Re,Rhenium,186.21|Os,Osmium,190.23|Ir,Iridium,192.22|Pt,Platinum,195.08|Au,Gold,196.97|Hg,Mercury,200.59|Tl,Thallium,204.38|Pb,Lead,207.2|Bi,Bismuth,208.98|Po,Polonium,209|At,Astatine,210|Rn,Radon,222|Fr,Francium,223|Ra,Radium,226|Ac,Actinium,227|Th,Thorium,232.04|Pa,Protactinium,231.04|U,Uranium,238.03|Np,Neptunium,237|Pu,Plutonium,244|Am,Americium,243|Cm,Curium,247|Bk,Berkelium,247|Cf,Californium,251|Es,Einsteinium,252|Fm,Fermium,257|Md,Mendelevium,258|No,Nobelium,259|Lr,Lawrencium,266|Rf,Rutherfordium,267|Db,Dubnium,268|Sg,Seaborgium,269|Bh,Bohrium,270|Hs,Hassium,277|Mt,Meitnerium,278|Ds,Darmstadtium,281|Rg,Roentgenium,282|Cn,Copernicium,285|Nh,Nihonium,286|Fl,Flerovium,289|Mc,Moscovium,290|Lv,Livermorium,293|Ts,Tennessine,294|Og,Oganesson,294";
+
+const CATS = {
+  alkali:{label:'Alkali Metal',rgb:'255,93,115'},
+  alkaline:{label:'Alkaline Earth',rgb:'251,146,60'},
+  transition:{label:'Transition Metal',rgb:'96,165,250'},
+  post:{label:'Post-Transition Metal',rgb:'45,212,191'},
+  metalloid:{label:'Metalloid',rgb:'163,230,53'},
+  nonmetal:{label:'Reactive Nonmetal',rgb:'148,163,255'},
+  halogen:{label:'Halogen',rgb:'34,211,238'},
+  noble:{label:'Noble Gas',rgb:'192,132,252'},
+  lanthanide:{label:'Lanthanoid',rgb:'250,204,21'},
+  actinide:{label:'Actinoid',rgb:'244,114,182'}
+};
+const TIPS = {
+  alkali:"Most reactive metals with ns¹ configuration; form +1 ions and react vigorously with water liberating H₂. Reactivity and atomic size increase down the group; Li shows anomalous behaviour.",
+  alkaline:"ns² configuration, form +2 ions. Be shows anomalous behaviour and a diagonal relationship with Al. Solubility of sulphates decreases down the group.",
+  transition:"Partially filled d-orbitals give variable oxidation states, coloured ions, paramagnetism, complex formation and catalytic activity (e.g., Fe in Haber process).",
+  post:"p-block metals. The inert pair effect becomes prominent down the group — lower oxidation states become more stable (e.g., Pb²⁺ over Pb⁴⁺).",
+  metalloid:"Show intermediate properties of metals and non-metals. Si and Ge are semiconductors; their oxides are often amphoteric or weakly acidic.",
+  nonmetal:"High ionisation enthalpy and electronegativity; tend to form covalent compounds and acidic oxides. Remember anomalous behaviour of the first member (C, N, O) due to small size and no d-orbitals.",
+  halogen:"ns²np⁵ — one electron short of a noble gas. Strong oxidising agents; F is the most electronegative element, but Cl has the most negative electron gain enthalpy.",
+  noble:"Completely filled valence shells → very high ionisation enthalpy and near-zero reactivity. Xenon still forms compounds like XeF₂, XeF₄, XeF₆ (Bartlett's discovery).",
+  lanthanide:"4f-series (inner transition). Lanthanoid contraction causes a steady decrease in size and makes Zr/Hf nearly identical. Common oxidation state: +3.",
+  actinide:"5f-series; all are radioactive. They show a wider range of oxidation states than lanthanoids because 5f, 6d and 7s energies are comparable."
+};
+
+function catOf(z){
+  if([3,11,19,37,55,87].includes(z)) return 'alkali';
+  if([4,12,20,38,56,88].includes(z)) return 'alkaline';
+  if(z>=57&&z<=71) return 'lanthanide';
+  if(z>=89&&z<=103) return 'actinide';
+  if([2,10,18,36,54,86,118].includes(z)) return 'noble';
+  if([9,17,35,53,85,117].includes(z)) return 'halogen';
+  if([1,6,7,8,15,16,34].includes(z)) return 'nonmetal';
+  if([5,14,32,33,51,52].includes(z)) return 'metalloid';
+  if([13,31,49,50,81,82,83,84,113,114,115,116].includes(z)) return 'post';
+  return 'transition';
+}
+function posOf(z){
+  if(z===1) return [1,1,1]; if(z===2) return [18,1,1];
+  if(z<=18){const p=z<=10?2:3,s=p===2?3:11,i=z-s;return [i<2?i+1:i+11,p,p];}
+  if(z<=54){const p=z<=36?4:5,s=p===4?19:37;return [z-s+1,p,p];}
+  const p=z<=86?6:7,s=p===6?55:87,i=z-s;
+  if(i<2) return [i+1,p,p];
+  if(i<=16) return [i+1,p===6?9:10,p]; // f-block row
+  return [i-13,p,p];
+}
+const ORDER=['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p','6s','4f','5d','6p','7s','5f','6d','7p'];
+const CAP={s:2,p:6,d:10,f:14};
+const EXC={24:{'4s':1,'3d':5},29:{'4s':1,'3d':10},41:{'5s':1,'4d':4},42:{'5s':1,'4d':5},44:{'5s':1,'4d':7},45:{'5s':1,'4d':8},46:{'5s':0,'4d':10},47:{'5s':1,'4d':10},57:{'4f':0,'5d':1},58:{'4f':1,'5d':1},64:{'4f':7,'5d':1},78:{'6s':1,'5d':9},79:{'6s':1,'5d':10},89:{'5f':0,'6d':1},90:{'5f':0,'6d':2},91:{'5f':2,'6d':1},92:{'5f':3,'6d':1},93:{'5f':4,'6d':1},96:{'5f':7,'6d':1}};
+const SUP={'0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+const sup=n=>String(n).split('').map(d=>SUP[d]).join('');
+function configOf(z){
+  let left=z;const c={};
+  for(const o of ORDER){if(left<=0)break;const n=Math.min(CAP[o[1]],left);c[o]=n;left-=n;}
+  if(EXC[z]) Object.assign(c,EXC[z]);
+  return c;
+}
+const CORES=[[2,'He',0],[10,'Ne',2],[18,'Ar',4],[36,'Kr',7],[54,'Xe',10],[86,'Rn',14]];
+function shorthand(z){
+  const c=configOf(z);let core=null;
+  for(const k of CORES) if(k[0]<z) core=k;
+  let start=0,str='';
+  if(core){str=`[${core[1]}] `;start=core[2]+1;}
+  str+=ORDER.slice(start).filter(o=>c[o]>0).map(o=>o+sup(c[o])).join(' ');
+  return str.trim();
+}
+function shellsOf(z){const c=configOf(z),s=[];for(const o in c){const n=+o[0];s[n-1]=(s[n-1]||0)+c[o];}return Array.from(s,v=>v||0);}
+function blockOf(z,x,y){if(y>=9)return 'f';if(z===2)return 's';if(x<=2)return 's';if(x>=13)return 'p';return 'd';}
+
+const ELEMENTS = RAW.split('|').map((r,i)=>{
+  const [sym,name,mass]=r.split(',');const z=i+1;const [x,y,period]=posOf(z);
+  return {z,sym,name,mass:+mass,x,y,period,cat:catOf(z),block:blockOf(z,x,y)};
+});
+
+/* ---------------- SCENE ---------------- */
+const lab=document.getElementById('lab');
+let W=lab.clientWidth,H=lab.clientHeight;
+const camera=new THREE.PerspectiveCamera(40,W/H,1,20000);
+const scene=new THREE.Scene();
+const glScene=new THREE.Scene();
+
+const cssRenderer=new CSS3DRenderer();
+cssRenderer.setSize(W,H);
+document.getElementById('css3d').appendChild(cssRenderer.domElement);
+
+const glRenderer=new THREE.WebGLRenderer({antialias:true,alpha:true});
+glRenderer.setPixelRatio(Math.min(devicePixelRatio,2));
+glRenderer.setSize(W,H);
+document.getElementById('webgl').appendChild(glRenderer.domElement);
+
+// Starfield + nebula particles
+(function(){
+  const g=new THREE.BufferGeometry(),N=2500,p=new Float32Array(N*3),col=new Float32Array(N*3);
+  const palette=[new THREE.Color('#7c5cff'),new THREE.Color('#22d3ee'),new THREE.Color('#ffffff'),new THREE.Color('#f472b6')];
+  for(let i=0;i<N;i++){
+    const r=3500+Math.random()*7000,t=Math.random()*Math.PI*2,ph=Math.acos(2*Math.random()-1);
+    p[i*3]=r*Math.sin(ph)*Math.cos(t);p[i*3+1]=r*Math.sin(ph)*Math.sin(t);p[i*3+2]=r*Math.cos(ph);
+    const c=palette[Math.floor(Math.random()*palette.length)];col.set([c.r,c.g,c.b],i*3);
+  }
+  g.setAttribute('position',new THREE.BufferAttribute(p,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const stars=new THREE.Points(g,new THREE.PointsMaterial({size:14,vertexColors:true,transparent:true,opacity:.85,sizeAttenuation:true,depthWrite:false,blending:THREE.AdditiveBlending}));
+  glScene.add(stars);glScene.userData.stars=stars;
+})();
+
+const objects=[];
+const targets={table:[],sphere:[],helix:[],grid:[]};
+
+ELEMENTS.forEach((e,i)=>{
+  const wrap=document.createElement('div');wrap.className='element';wrap.dataset.i=i;
+  const t=document.createElement('div');t.className='tile';
+  t.innerHTML=`<div class="num">${e.z}</div><div class="sym">${e.sym}</div><div class="nm">${e.name}</div><div class="ms">${e.mass}</div>`;
+  wrap.appendChild(t);
+  const obj=new CSS3DObject(wrap);
+  obj.position.set(Math.random()*6000-3000,Math.random()*6000-3000,Math.random()*6000-3000);
+  scene.add(obj);objects.push(obj);e.dom=wrap;
+
+  const o=new THREE.Object3D();
+  o.position.set(e.x*140-1330,-(e.y*180)+990,0);targets.table.push(o);
+});
+// sphere
+const vec=new THREE.Vector3();
+for(let i=0,l=objects.length;i<l;i++){
+  const phi=Math.acos(-1+(2*i)/l),theta=Math.sqrt(l*Math.PI)*phi;
+  const o=new THREE.Object3D();o.position.setFromSphericalCoords(850,phi,theta);
+  vec.copy(o.position).multiplyScalar(2);o.lookAt(vec);targets.sphere.push(o);
+}
+// helix
+for(let i=0;i<objects.length;i++){
+  const theta=i*0.175+Math.PI,y=-(i*8)+470;
+  const o=new THREE.Object3D();o.position.setFromCylindricalCoords(900,theta,y);
+  vec.set(o.position.x*2,o.position.y,o.position.z*2);o.lookAt(vec);targets.helix.push(o);
+}
+// grid
+for(let i=0;i<objects.length;i++){
+  const o=new THREE.Object3D();
+  o.position.set((i%5)*400-800,(-(Math.floor(i/5)%5)*400)+800,Math.floor(i/25)*1000-2000);
+  targets.grid.push(o);
+}
+
+let layout='table';
+function fitDistance(){
+  const aspect=W/H,t=Math.tan(THREE.MathUtils.degToRad(20));
+  return Math.max(1450/(t*aspect),1150/t)*1.02;
+}
+camera.position.set(0,0,fitDistance()+800);
+
+const controls=new OrbitControls(camera,cssRenderer.domElement);
+controls.enableDamping=true;controls.dampingFactor=.07;
+controls.minDistance=400;controls.maxDistance=12000;
+controls.rotateSpeed=.6;controls.autoRotateSpeed=1.2;
+controls.enableZoom=false;
+
+let fly=null;
+controls.addEventListener('start',()=>{fly=null;});
+
+function setLayout(name){
+  layout=name;
+  document.querySelectorAll('#layoutSeg .btn').forEach(b=>b.classList.toggle('active',b.dataset.layout===name));
+  const d = name==='table'?fitDistance(): name==='grid'?Math.max(3600,fitDistance()*0.9):Math.max(3000,fitDistance()*0.85);
+  const dir=camera.position.clone().sub(controls.target).normalize();
+  if(name==='table') dir.set(0,0,1);
+  fly={target:new THREE.Vector3(0,0,0),cam:dir.multiplyScalar(d)};
+}
+document.querySelectorAll('#layoutSeg .btn').forEach(b=>b.onclick=()=>setLayout(b.dataset.layout));
+
+/* ---------------- COLOURS ---------------- */
+function hslToRgb(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));return [255*f(0),255*f(8),255*f(4)].map(Math.round).join(',');}
+const BLOCKC={s:'255,107,139',p:'250,204,21',d:'96,165,250',f:'52,211,153'};
+const PERIODC=['','255,93,115','251,146,60','250,204,21','163,230,53','34,211,238','124,92,255','244,114,182'];
+let colorMode='category';
+function rgbFor(e){
+  if(colorMode==='block') return BLOCKC[e.block];
+  if(colorMode==='period') return PERIODC[e.period];
+  if(colorMode==='mass') return hslToRgb(240-(e.mass/294)*240,90,60);
+  return CATS[e.cat].rgb;
+}
+let legendFilter=null;
+function applyColors(){ELEMENTS.forEach(e=>e.dom.style.setProperty('--rgb',rgbFor(e)));buildLegend();}
+function buildLegend(){
+  const L=document.getElementById('legend');let items=[];
+  if(colorMode==='category') items=Object.entries(CATS).map(([k,v])=>({k,label:v.label,rgb:v.rgb}));
+  else if(colorMode==='block') items=Object.entries(BLOCKC).map(([k,v])=>({k,label:k+'-block',rgb:v}));
+  else if(colorMode==='period') items=[1,2,3,4,5,6,7].map(p=>({k:p,label:'Period '+p,rgb:PERIODC[p]}));
+  if(colorMode==='mass'){
+    L.innerHTML=`<div class="chip" style="cursor:default">Light <div style="width:160px;height:10px;border-radius:6px;background:linear-gradient(90deg,hsl(240,90%,60%),hsl(180,90%,60%),hsl(120,90%,60%),hsl(60,90%,60%),hsl(0,90%,60%))"></div> Heavy (294 u)</div>`;return;
+  }
+  L.innerHTML=items.map(it=>`<div class="chip ${legendFilter==it.k?'on':''}" data-k="${it.k}"><span style="background:rgb(${it.rgb});box-shadow:0 0 8px rgb(${it.rgb})"></span>${it.label}</div>`).join('');
+  L.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+    const k=c.dataset.k;legendFilter=(legendFilter==k)?null:k;applyFilter();buildLegend();
+  });
+}
+function matchesLegend(e){
+  if(legendFilter==null) return true;
+  if(colorMode==='category') return e.cat===legendFilter;
+  if(colorMode==='block') return e.block===legendFilter;
+  if(colorMode==='period') return e.period==legendFilter;
+  return true;
+}
+let searchQ='';
+function matchesSearch(e){
+  if(!searchQ) return true;const q=searchQ.toLowerCase();
+  return e.name.toLowerCase().includes(q)||e.sym.toLowerCase()===q||String(e.z)===q||(q.length>1&&e.sym.toLowerCase().startsWith(q));
+}
+function applyFilter(){ELEMENTS.forEach(e=>e.dom.classList.toggle('dim',!(matchesLegend(e)&&matchesSearch(e))));}
+document.getElementById('colorMode').onchange=ev=>{colorMode=ev.target.value;legendFilter=null;applyColors();applyFilter();};
+const searchEl=document.getElementById('search');
+searchEl.oninput=()=>{searchQ=searchEl.value.trim();applyFilter();};
+searchEl.onkeydown=ev=>{if(ev.key==='Enter'){const f=ELEMENTS.find(e=>matchesSearch(e)&&matchesLegend(e));if(f){openPanel(f.z-1);focusOn(f.z-1);}}};
+
+/* ---------------- INTERACTION ---------------- */
+let downInfo=null;
+cssRenderer.domElement.addEventListener('pointerdown',ev=>{
+  controls.enableZoom=true;document.getElementById('hint').textContent='🖱️ Scroll to zoom · drag to orbit';
+  const el=ev.target.closest('.element');
+  downInfo={x:ev.clientX,y:ev.clientY,i:el?+el.dataset.i:null};
+});
+window.addEventListener('pointerup',ev=>{
+  if(!downInfo) return;
+  const d=Math.hypot(ev.clientX-downInfo.x,ev.clientY-downInfo.y);
+  if(d<7&&downInfo.i!=null) handleElementClick(downInfo.i);
+  downInfo=null;
+});
+lab.addEventListener('mouseleave',()=>{controls.enableZoom=false;document.getElementById('hint').textContent='🖱️ Drag to orbit · click inside to enable scroll-zoom';});
+
+function handleElementClick(i){
+  if(quiz) return quizAnswer(i);
+  openPanel(i);
+}
+
+let rot=false;
+document.getElementById('rotBtn').onclick=e=>{rot=!rot;controls.autoRotate=rot;e.currentTarget.classList.toggle('active',rot);};
+document.getElementById('resetBtn').onclick=()=>{setLayout(layout);};
+document.getElementById('goBlock').onclick=()=>{
+  colorMode='block';document.getElementById('colorMode').value='block';legendFilter=null;applyColors();applyFilter();
+  document.getElementById('lab-section').scrollIntoView({behavior:'smooth'});setLayout('table');
+};
+
+function focusOn(i){
+  const t=targets[layout][i];
+  const dir=new THREE.Vector3(0,0,1).applyQuaternion(t.quaternion);
+  if(layout==='grid') dir.set(0,0,1);
+  fly={target:t.position.clone(),cam:t.position.clone().add(dir.multiplyScalar(layout==='grid'?600:750))};
+}
+
+/* ---------------- PANEL ---------------- */
+const panel=document.getElementById('panel');let current=-1;
+function openPanel(i){
+  if(current>=0) ELEMENTS[current].dom.classList.remove('active');
+  current=i;const e=ELEMENTS[i];e.dom.classList.add('active');
+  const rgb=CATS[e.cat].rgb;
+  const box=document.getElementById('pSymBox');box.style.setProperty('--rgb',rgb);
+  document.getElementById('pNum').textContent=e.z;
+  document.getElementById('pSym').textContent=e.sym;
+  document.getElementById('pName').textContent=e.name;
+  const pc=document.getElementById('pCat');pc.textContent=CATS[e.cat].label;pc.style.color=`rgb(${rgb})`;
+  document.getElementById('sZ').textContent=e.z;
+  document.getElementById('sMass').textContent=e.mass;
+  document.getElementById('sGroup').textContent=e.block==='f'?'3 (f-block)':e.x;
+  document.getElementById('sPeriod').textContent=e.period;
+  document.getElementById('sBlock').textContent=e.block+'-block';
+  document.getElementById('sN').textContent=Math.max(0,Math.round(e.mass)-e.z);
+  document.getElementById('sConfig').textContent=shorthand(e.z);
+  const sh=shellsOf(e.z),names='KLMNOPQ';
+  document.getElementById('sShells').innerHTML=sh.map((n,k)=>`<div>${names[k]} · ${n}</div>`).join('');
+  let tip=TIPS[e.cat];
+  if(e.z===1) tip="Hydrogen is unique — it resembles alkali metals (1s¹, forms H⁺) and halogens (needs one electron, forms H⁻). Hence its position is debated.";
+  if(e.z===24||e.z===29) tip="Anomalous configuration! Half-filled (d⁵) / completely filled (d¹⁰) subshells are extra stable due to symmetry and exchange energy. " + TIPS.transition;
+  document.getElementById('sTip').textContent=tip;
+  bohrShells=sh;bohrRGB=rgb;bohrSym=e.sym;
+  panel.classList.add('open');
+}
+function closePanel(){panel.classList.remove('open');if(current>=0)ELEMENTS[current].dom.classList.remove('active');current=-1;}
+document.getElementById('closePanel').onclick=closePanel;
+document.getElementById('prevEl').onclick=()=>{if(current>0)openPanel(current-1);};
+document.getElementById('nextEl').onclick=()=>{if(current<117)openPanel(current+1);};
+document.getElementById('focusBtn').onclick=()=>{if(current>=0){focusOn(current);if(innerWidth<768)closePanel();}};
+window.addEventListener('keydown',ev=>{
+  if(document.activeElement===searchEl) return;
+  if(current<0) return;
+  if(ev.key==='ArrowRight'&&current<117) openPanel(current+1);
+  if(ev.key==='ArrowLeft'&&current>0) openPanel(current-1);
+  if(ev.key==='Escape') closePanel();
+});
+
+/* ---------------- BOHR MODEL ---------------- */
+const bc=document.getElementById('bohr'),bx=bc.getContext('2d');
+let bohrShells=[1],bohrRGB='148,163,255',bohrSym='H';
+function drawBohr(t){
+  if(!panel.classList.contains('open')) return;
+  const w=bc.width,h=bc.height,cx=w/2,cy=h/2;
+  bx.clearRect(0,0,w,h);
+  const n=bohrShells.length,maxR=Math.min(w,h)/2-12,minR=30,step=n>1?(maxR-minR)/(n-1):0;
+  // nucleus glow
+  const g=bx.createRadialGradient(cx,cy,2,cx,cy,26);
+  g.addColorStop(0,`rgba(${bohrRGB},1)`);g.addColorStop(1,`rgba(${bohrRGB},0)`);
+  bx.fillStyle=g;bx.beginPath();bx.arc(cx,cy,26,0,Math.PI*2);bx.fill();
+  bx.fillStyle='#fff';bx.font='bold 14px Space Grotesk';bx.textAlign='center';bx.textBaseline='middle';bx.fillText(bohrSym,cx,cy);
+  bohrShells.forEach((cnt,k)=>{
+    const r=n>1?minR+step*k:minR+30;
+    bx.strokeStyle='rgba(255,255,255,.14)';bx.lineWidth=1;bx.beginPath();bx.arc(cx,cy,r,0,Math.PI*2);bx.stroke();
+    const speed=(0.9/(k+1))*(k%2?-1:1);
+    for(let j=0;j<cnt;j++){
+      const a=t*0.001*speed+(j/cnt)*Math.PI*2;
+      const ex=cx+Math.cos(a)*r,ey=cy+Math.sin(a)*r;
+      bx.fillStyle='rgba(34,211,238,.25)';bx.beginPath();bx.arc(ex,ey,5.5,0,Math.PI*2);bx.fill();
+      bx.fillStyle='#a5f3fc';bx.beginPath();bx.arc(ex,ey,2.6,0,Math.PI*2);bx.fill();
+    }
+  });
+}
+
+/* ---------------- QUIZ ---------------- */
+let quiz=null;const hud=document.getElementById('quizHud');
+function toast(msg,color='#22d3ee'){const t=document.getElementById('toast');t.textContent=msg;t.style.borderColor=color;t.style.color=color;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),1600);}
+function startQuiz(){
+  closePanel();searchEl.value='';searchQ='';legendFilter=null;applyFilter();buildLegend();
+  quiz={round:0,score:0,total:10,answer:null,locked:false};
+  setLayout('table');hud.classList.add('show');nextQ();
+}
+function nextQ(){
+  document.querySelectorAll('.element.right,.element.wrong').forEach(d=>d.classList.remove('right','wrong'));
+  if(quiz.round>=quiz.total) return endQuiz();
+  quiz.round++;quiz.locked=false;
+  const type=Math.floor(Math.random()*3);
+  let z;
+  if(type===2) z=1+Math.floor(Math.random()*36); else z=1+Math.floor(Math.random()*(Math.random()<.7?56:118));
+  quiz.answer=z-1;const e=ELEMENTS[z-1];
+  const qt=document.getElementById('qType'),qp=document.getElementById('qPrompt');
+  if(type===0){qt.textContent='Find the element named';qp.textContent=e.name;}
+  else if(type===1){qt.textContent='Find the element with atomic number';qp.textContent='Z = '+z;}
+  else {qt.textContent='Find the element with configuration';qp.textContent=shorthand(z);}
+  document.getElementById('qRound').textContent=`Round ${quiz.round}/${quiz.total}`;
+  document.getElementById('qScore').textContent=`Score ${quiz.score}`;
+}
+function quizAnswer(i){
+  if(quiz.locked) return;quiz.locked=true;
+  const correct=i===quiz.answer;
+  if(correct){quiz.score++;ELEMENTS[i].dom.classList.add('right');toast(`✓ Correct! ${ELEMENTS[i].name}`,'#4ade80');}
+  else{ELEMENTS[i].dom.classList.add('wrong');ELEMENTS[quiz.answer].dom.classList.add('right');toast(`✗ That's ${ELEMENTS[i].name}. Answer: ${ELEMENTS[quiz.answer].name}`,'#f87171');}
+  document.getElementById('qScore').textContent=`Score ${quiz.score}`;
+  setTimeout(nextQ,correct?1100:2000);
+}
+function endQuiz(){
+  const s=quiz.score,t=quiz.total;
+  document.getElementById('qType').textContent='Quiz complete';
+  document.getElementById('qPrompt').textContent=`${s}/${t} · ${s>=9?'Periodic Pro 🏆':s>=6?'Great going ⚡':'Keep exploring 🔭'}`;
+  quiz=null;
+  setTimeout(()=>{if(!quiz)hud.classList.remove('show');},3500);
+}
+document.getElementById('quizBtn').onclick=startQuiz;
+document.getElementById('qStop').onclick=()=>{quiz=null;hud.classList.remove('show');document.querySelectorAll('.element.right,.element.wrong').forEach(d=>d.classList.remove('right','wrong'));};
+
+/* ---------------- LOOP ---------------- */
+applyColors();
+setLayout('table');
+setTimeout(()=>{const l=document.getElementById('loader');l.style.opacity=0;setTimeout(()=>l.remove(),600);},400);
+
+function animate(t){
+  requestAnimationFrame(animate);
+  const k=0.065;
+  const tg=targets[layout];
+  for(let i=0;i<objects.length;i++){
+    const o=objects[i],g=tg[i];
+    o.position.lerp(g.position,k);
+    o.quaternion.slerp(g.quaternion,k);
+  }
+  if(fly){
+    controls.target.lerp(fly.target,.06);
+    camera.position.lerp(fly.cam,.06);
+    if(camera.position.distanceTo(fly.cam)<2&&controls.target.distanceTo(fly.target)<2) fly=null;
+  }
+  controls.update();
+  glScene.userData.stars.rotation.y+=0.0002;
+  glRenderer.render(glScene,camera);
+  cssRenderer.render(scene,camera);
+  drawBohr(t);
+}
+requestAnimationFrame(animate);
+
+new ResizeObserver(()=>{
+  W=lab.clientWidth;H=lab.clientHeight;
+  camera.aspect=W/H;camera.updateProjectionMatrix();
+  cssRenderer.setSize(W,H);glRenderer.setSize(W,H);
+}).observe(lab);
+
+/* ---------------- REVEAL ---------------- */
+const io=new IntersectionObserver(es=>es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}}),{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+</script>
+</body>
+</html>
